@@ -16,19 +16,21 @@ const (
 )
 
 type Response struct {
-	Status  int   `json:"status"`
+	Status  int   `json:"-"`
 	Content any   `json:"content"`
 	Err     error `json:"err,omitempty"`
 }
 
 type HandlerFunc func(http.ResponseWriter, *http.Request) Response
 
+type Route string
+
 type Endpoint struct {
-	Route   string
 	Method  Method
 	Handler HandlerFunc
 }
 
 type Controller interface {
-	Endpoints() []Endpoint
+	Key() string
+	Endpoints() map[Route]Endpoint
 }

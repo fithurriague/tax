@@ -7,8 +7,10 @@ const (
 	OperationTypeSell OperationType = "sell"
 )
 
+var AllOperationTypes = []OperationType{OperationTypeBuy, OperationTypeSell}
+
 type Operation struct {
 	Type     OperationType `json:"operation"`
-	UnitCost int           `json:"unit_cost"`
+	UnitCost float64       `json:"unit_cost"`
 	Quantity int           `json:"quantity"`
 }

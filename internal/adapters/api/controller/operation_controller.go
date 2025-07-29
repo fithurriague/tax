@@ -5,40 +5,58 @@ import (
 	"net/http"
 
 	"github.com/fithurriague/tax/internal/domain/entities"
+	"github.com/fithurriague/tax/internal/ports/iport"
 )
 
-type OperationController struct{}
-
-func NewOperationController() *OperationController {
-	return &OperationController{}
+type OperationController struct {
+	key          string
+	operationSvc iport.OperationService
 }
 
-func (c *OperationController) Endpoints() []Endpoint {
-	return []Endpoint{
-		{
-			Route:   "/tax",
-			Method:  "POST",
-			Handler: c.tax,
+func NewOperationController(
+	operationSvc iport.OperationService,
+) *OperationController {
+	return &OperationController{
+		key:          "operation_controller",
+		operationSvc: operationSvc,
+	}
+}
+
+func (c *OperationController) Key() string {
+	return c.key
+}
+
+func (c *OperationController) Endpoints() map[Route]Endpoint {
+	return map[Route]Endpoint{
+		"/tax": {
+			Method:  MethodPOST,
+			Handler: c.Tax,
 		},
 	}
 }
 
-func (c *OperationController) tax(
+func (c *OperationController) Tax(
 	w http.ResponseWriter,
 	r *http.Request,
 ) Response {
-	var op entities.Operation
-	if err := json.NewDecoder(r.Body).Decode(&op); err != nil {
+	var ops []entities.Operation
+	if err := json.NewDecoder(r.Body).Decode(&ops); err != nil {
 		return Response{
 			Status: http.StatusBadRequest,
 			Err:    err,
 		}
 	}
 
-	// TODO: Perform operations
+	taxes, err := c.operationSvc.GetTaxes(ops)
+	if err != nil {
+		return Response{
+			Status: http.StatusInternalServerError,
+			Err:    err,
+		}
+	}
 
 	return Response{
-		Status: http.StatusOK,
-		Content: "Hello from operation controller",
+		Status:  http.StatusOK,
+		Content: taxes,
 	}
 }

@@ -4,17 +4,24 @@ import (
 	"net/http"
 )
 
-type HealthController struct{}
-
-func NewHealthController() *HealthController {
-	return &HealthController{}
+type HealthController struct {
+	key string
 }
 
-func (c *HealthController) Endpoints() []Endpoint {
-	return []Endpoint{
-		{
-			Route:   "/health",
-			Method:  "GET",
+func NewHealthController() *HealthController {
+	return &HealthController{
+		key: "health_controller",
+	}
+}
+
+func (c *HealthController) Key() string {
+	return c.key
+}
+
+func (c *HealthController) Endpoints() map[Route]Endpoint {
+	return map[Route]Endpoint{
+		"/health": {
+			Method:  MethodGET,
 			Handler: c.health,
 		},
 	}
@@ -25,7 +32,7 @@ func (c *HealthController) health(
 	r *http.Request,
 ) Response {
 	return Response{
-		Status: http.StatusOK,
+		Status:  http.StatusOK,
 		Content: "Up and running",
 	}
 }

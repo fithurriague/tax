@@ -14,22 +14,32 @@ type Server struct {
 	logger      *log.Logger
 	Address     string
 	RoutePrefix string
-	Controllers []controller.Controller
+	Controllers map[string]controller.Controller
 }
 
 func New(prefix string, addr string, logger *log.Logger, controllers ...controller.Controller) Server {
-	return Server{
+	srv := Server{
 		mux:         http.NewServeMux(),
 		logger:      logger,
 		Address:     addr,
 		RoutePrefix: prefix,
-		Controllers: controllers,
+		Controllers: make(map[string]controller.Controller, len(controllers)),
 	}
+
+	for _, c := range controllers {
+		srv.Controllers[c.Key()] = c
+	}
+
+	return srv
 }
 
-func (s *Server) handle(hfn controller.HandlerFunc) http.HandlerFunc {
+func (s *Server) Handle(hfn controller.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		res := hfn(w, r)
+
+		// Set Content-Type header for JSON responses before WriteHeader
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(res.Status)
 
 		var err error
 		if contentType := w.Header().Get("Content-Type"); contentType == "text/plain" {
@@ -41,18 +51,21 @@ func (s *Server) handle(hfn controller.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		err = json.NewEncoder(w).Encode(res.Content)
-		if err != nil {
-			s.logger.Printf("Failed to write response: %s", err.Error())
+		// Only encode if there's content to encode
+		if res.Content != nil {
+			err = json.NewEncoder(w).Encode(res.Content)
+			if err != nil {
+				s.logger.Printf("Failed to write response: %s", err.Error())
+			}
 		}
 	}
 }
 
 func (s *Server) ListenAndServe() {
 	for _, cont := range s.Controllers {
-		for _, endpoint := range cont.Endpoints() {
-			route := fmt.Sprintf("%s %s%s", endpoint.Method, s.RoutePrefix, endpoint.Route)
-			s.mux.Handle(route, s.handle(endpoint.Handler))
+		for route, endpoint := range cont.Endpoints() {
+			fullRoute := fmt.Sprintf("%s %s%s", endpoint.Method, s.RoutePrefix, route)
+			s.mux.Handle(fullRoute, s.Handle(endpoint.Handler))
 		}
 	}
 
