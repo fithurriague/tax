@@ -1,8 +1,6 @@
 package services
 
 import (
-	"errors"
-
 	"github.com/fithurriague/tax/internal/domain/entities"
 	"github.com/fithurriague/tax/internal/ports/iport"
 )
@@ -32,51 +30,33 @@ func NewOperationService(
 }
 
 func (s *operationService) GetTaxes(ops []entities.Operation) (taxes []entities.Tax, err error) {
-	var accumulatedWeightedPrice float64 = 0
-	buyedActions := 0
-	var losses float64 = 0
+	session := entities.MarketSession{}
 
 	for _, op := range ops {
 		// Buy
 		if op.Type == entities.OperationTypeBuy {
-			accumulatedWeightedPrice += op.UnitCost * float64(op.Quantity)
-			buyedActions += op.Quantity
+			session.Buy(op.UnitCost, op.Quantity)
+			continue
 		}
 
 		// Sell
 		if op.Type == entities.OperationTypeSell {
-			// Safe to assume it will never happen, but for correctness sake
-			if op.Quantity > buyedActions {
-				return nil, errors.New("not enough actions to sell")
-			}
+			profit, err := session.Sell(op.UnitCost, op.Quantity)
+			tax := profit * s.taxRate
 
-			averageUnitCost := accumulatedWeightedPrice / float64(buyedActions)
-			if op.UnitCost <= averageUnitCost {
-				// Accumulates losses
-				diff := averageUnitCost - op.UnitCost
-				losses += diff * float64(op.Quantity)
-				// Add tax entry with 0 tax for loss or break-even operations
-				taxes = append(taxes, entities.Tax{Tax: 0})
-			} else {
-				// Does not pay taxes
-				if op.UnitCost*float64(op.Quantity) <= s.taxableAmount {
-					taxes = append(taxes, entities.Tax{Tax: 0})
-					continue
-				}
-
-				// Pays taxes
-				diff := op.UnitCost - averageUnitCost
-				profit := diff * float64(op.Quantity)
-				tax := profit * s.taxRate
-
-				// Tax deduction
-				if tax <= losses {
-					losses -= tax
-					tax = 0
-				}
-
+			// Does NOT pay taxes
+			if err != nil || profit <= 0 || op.Total() <= s.taxableAmount {
 				taxes = append(taxes, entities.Tax{Tax: tax})
+				return taxes, err
 			}
+
+			// Tax deduction
+			if tax <= session.AccumulatedLosses {
+				session.AccumulatedLosses -= tax
+				tax = 0
+			}
+
+			taxes = append(taxes, entities.Tax{Tax: tax})
 		}
 	}
 

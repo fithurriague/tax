@@ -14,3 +14,7 @@ type Operation struct {
 	UnitCost float64       `json:"unit_cost"`
 	Quantity int           `json:"quantity"`
 }
+
+func (op *Operation) Total() float64 {
+	return op.UnitCost * float64(op.Quantity)
+}

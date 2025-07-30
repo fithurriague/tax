@@ -22,4 +22,10 @@
   Operation service with dumb business logic approach and simple integration test simulating a request
 </details>
 
+<details>
+ <summary>Descriptive Refactor</summary>
+
+  Refactored operation_service, entities and tests with a focus based on cleanlyness and expresiveness of the code.
+</details>
+
 <sub>This was a Conekta backend technical challenge<sub>
