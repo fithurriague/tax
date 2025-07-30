@@ -31,6 +31,7 @@ func NewOperationService(
 
 func (s *operationService) GetTaxes(ops []entities.Operation) (taxes []entities.Tax, err error) {
 	session := entities.MarketSession{}
+	taxes = make([]entities.Tax, 0, len(ops))
 
 	for _, op := range ops {
 		// Buy

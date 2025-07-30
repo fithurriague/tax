@@ -63,22 +63,26 @@ func BenchmarkTax(b *testing.B) {
 		operationController,
 	)
 
-	b.Run("No Loss No Profit", func(b *testing.B) {
-		r := httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(noLossNoProfitPayload))
-		w := httptest.NewRecorder()
-		r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
+	r := httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(noLossNoProfitPayload))
+	r.Header.Set("Content-Type", "application/json")
+
+	b.Run("No Loss No Profit", func(b *testing.B) {
 		for b.Loop() {
+			w.Body.Reset()
+			w.Code = 0
 			srv.Handle(endpoint.Handler)(w, r)
 		}
 	})
 
-	b.Run("Loss And Profit", func(b *testing.B) {
-		r := httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(lossAndProfitPayload))
-		w := httptest.NewRecorder()
-		r.Header.Set("Content-Type", "application/json")
+	r = httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(lossAndProfitPayload))
+	r.Header.Set("Content-Type", "application/json")
 
+	b.Run("Loss And Profit", func(b *testing.B) {
 		for b.Loop() {
+			w.Body.Reset()
+			w.Code = 0
 			srv.Handle(endpoint.Handler)(w, r)
 		}
 	})
