@@ -2,10 +2,10 @@ goos: linux
 goarch: amd64
 pkg: github.com/fithurriague/tax/cmd
 cpu: AMD Ryzen 5 9600X 6-Core Processor             
-BenchmarkTax/No_Loss_No_Profit-12         	  451158	      2647 ns/op	    8713 B/op	      47 allocs/op
-BenchmarkTax/Loss_And_Profit-12           	  331399	      3526 ns/op	    8881 B/op	      51 allocs/op
+BenchmarkTax/No_Loss_No_Profit-12         	 5935240	       180.5 ns/op	     907 B/op	       5 allocs/op
+BenchmarkTax/Loss_And_Profit-12           	 6344932	       178.6 ns/op	     906 B/op	       5 allocs/op
 PASS
-ok  	github.com/fithurriague/tax/cmd	2.366s
+ok  	github.com/fithurriague/tax/cmd	2.209s
 ?   	github.com/fithurriague/tax/internal/adapters/api/controller	[no test files]
 ?   	github.com/fithurriague/tax/internal/adapters/api/server	[no test files]
 PASS

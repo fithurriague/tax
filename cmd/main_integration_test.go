@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"slices"
 	"testing"
 
 	"github.com/fithurriague/tax/internal/adapters/api/controller"
+	"github.com/fithurriague/tax/internal/adapters/api/server"
 	"github.com/fithurriague/tax/internal/domain/entities"
 	"github.com/fithurriague/tax/internal/domain/services"
 )
@@ -266,7 +271,18 @@ func TestTax(t *testing.T) {
 		},
 	}
 
+	const route = "/tax"
 	operationService := services.NewOperationService(entities.AllOperationTypes, 20000, 0.2)
+	operationController := controller.NewOperationController(operationService)
+	endpoint := operationController.Endpoints()[route]
+
+	srv := server.New(
+		"",
+		":8080",
+		log.New(os.Stdout, "TEST: ", log.Ldate|log.Ltime),
+		operationController,
+	)
+
 	for _, tc := range testcases {
 		t.Run(tc.Name, func(t *testing.T) {
 			payload, err := json.Marshal(tc.Input)
@@ -274,11 +290,11 @@ func TestTax(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			w := networkRequest(
-				controller.NewOperationController(operationService),
-				"/tax",
-				payload,
-			)
+			r := httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+			r.Header.Set("Content-Type", "application/json")
+
+			srv.Handle(endpoint.Handler)(w, r)
 
 			if w.Code != tc.Want.Status {
 				t.Errorf("Status: got = %v want %v", w.Code, tc.Want.Status)

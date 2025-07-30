@@ -1,10 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
+	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/fithurriague/tax/internal/adapters/api/controller"
+	"github.com/fithurriague/tax/internal/adapters/api/server"
 	"github.com/fithurriague/tax/internal/domain/entities"
 	"github.com/fithurriague/tax/internal/domain/services"
 )
@@ -46,17 +51,35 @@ func BenchmarkTax(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	const route = "/tax"
 	operationService := services.NewOperationService(entities.AllOperationTypes, 20000, 0.2)
+	operationController := controller.NewOperationController(operationService)
+	endpoint := operationController.Endpoints()[route]
+
+	srv := server.New(
+		"",
+		":8080",
+		log.New(os.Stdout, "TEST: ", log.Ldate|log.Ltime),
+		operationController,
+	)
 
 	b.Run("No Loss No Profit", func(b *testing.B) {
+		r := httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(noLossNoProfitPayload))
+		w := httptest.NewRecorder()
+		r.Header.Set("Content-Type", "application/json")
+
 		for b.Loop() {
-			networkRequest(controller.NewOperationController(operationService), "/tax", noLossNoProfitPayload)
+			srv.Handle(endpoint.Handler)(w, r)
 		}
 	})
 
 	b.Run("Loss And Profit", func(b *testing.B) {
+		r := httptest.NewRequest(string(endpoint.Method), string(route), bytes.NewReader(lossAndProfitPayload))
+		w := httptest.NewRecorder()
+		r.Header.Set("Content-Type", "application/json")
+
 		for b.Loop() {
-			networkRequest(controller.NewOperationController(operationService), "/tax", lossAndProfitPayload)
+			srv.Handle(endpoint.Handler)(w, r)
 		}
 	})
 }
