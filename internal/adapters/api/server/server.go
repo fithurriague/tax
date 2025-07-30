@@ -51,12 +51,16 @@ func (s *Server) Handle(hfn controller.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		// Only encode if there's content to encode
-		if res.Content != nil {
+		// WARNING: BAD PRACTICE: Only done to comply with the challenge response format
+		// I should ship the entire response as it is including content and error
+		if res.Err != nil {
+			err = json.NewEncoder(w).Encode(res.Err)
+		} else {
 			err = json.NewEncoder(w).Encode(res.Content)
-			if err != nil {
-				s.logger.Printf("Failed to write response: %s", err.Error())
-			}
+		}
+
+		if err != nil {
+			s.logger.Printf("Failed to write response: %s", err.Error())
 		}
 	}
 }

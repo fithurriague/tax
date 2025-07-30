@@ -36,27 +36,33 @@ func (s *operationService) GetTaxes(ops []entities.Operation) (taxes []entities.
 		// Buy
 		if op.Type == entities.OperationTypeBuy {
 			session.Buy(op.UnitCost, op.Quantity)
+			taxes = append(taxes, entities.Tax{Tax: 0})
 			continue
 		}
 
 		// Sell
 		if op.Type == entities.OperationTypeSell {
 			profit, err := session.Sell(op.UnitCost, op.Quantity)
-			tax := profit * s.taxRate
-
-			// Does NOT pay taxes
-			if err != nil || profit <= 0 || op.Total() <= s.taxableAmount {
-				taxes = append(taxes, entities.Tax{Tax: tax})
+			if err != nil {
 				return taxes, err
 			}
 
-			// Tax deduction
-			if tax <= session.AccumulatedLosses {
-				session.AccumulatedLosses -= tax
-				tax = 0
+			// Does NOT pay taxes
+			if profit <= 0 || op.Total() <= s.taxableAmount {
+				taxes = append(taxes, entities.Tax{Tax: 0})
+				continue
 			}
 
-			taxes = append(taxes, entities.Tax{Tax: tax})
+			// Tax deduction
+			if profit <= session.AccumulatedLosses {
+				session.AccumulatedLosses -= profit
+				profit = 0
+			} else {
+				profit -= session.AccumulatedLosses
+				session.AccumulatedLosses = 0
+			}
+
+			taxes = append(taxes, entities.Tax{Tax: profit * s.taxRate})
 		}
 	}
 

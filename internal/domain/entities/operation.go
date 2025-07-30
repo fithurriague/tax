@@ -11,7 +11,7 @@ var AllOperationTypes = []OperationType{OperationTypeBuy, OperationTypeSell}
 
 type Operation struct {
 	Type     OperationType `json:"operation"`
-	UnitCost float64       `json:"unit_cost"`
+	UnitCost float64       `json:"unit-cost"`
 	Quantity int           `json:"quantity"`
 }
 
